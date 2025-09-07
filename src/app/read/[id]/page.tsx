@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import TopBar from "@/components/TopBar";
 import ProgressBar from "@/components/ProgressBar";
 import { books } from "@/lib/data";
 
@@ -32,9 +31,12 @@ export default function ReadPage({ params }: { params: { id: string } }) {
     inputRef.current?.focus();
   }, []);
 
-  // Render passage as skeleton with user input overlay
+  // Render passage as skeleton with user input overlay, with word wrapping
   function renderSkeleton() {
     if (!book) return null;
+    // Split passage into words and spaces, preserving newlines
+    const words = book.passage.match(/[^\s\n]+|\s+|\n/g) || [];
+    let charIndex = 0;
     return (
       <div
         ref={inputRef}
@@ -44,16 +46,31 @@ export default function ReadPage({ params }: { params: { id: string } }) {
         style={{ letterSpacing: "0.01em" }}
         aria-label="Typing area"
       >
-        {book.passage.split("").map((char, i) => {
-          let displayChar = char === " " ? "\u00A0" : char;
-          if (i < input.length) {
-            if (input[i] === char) {
-              return <span key={i} className="text-black dark:text-white bg-transparent">{displayChar}</span>;
+        {words.map((word, wi) => {
+          if (word === "\n") {
+            return <br key={wi} />;
+          }
+          // Render each word or space as a span for wrapping
+          const chars = word.split("");
+          const wordSpans = chars.map((char, ci) => {
+            let displayChar = char === " " ? "\u00A0" : char;
+            const i = charIndex;
+            charIndex++;
+            if (i < input.length) {
+              if (input[i] === char) {
+                return <span key={ci} className="text-black dark:text-white bg-transparent">{displayChar}</span>;
+              } else {
+                return <span key={ci} className="underline decoration-red-400/60 text-red-600 dark:text-red-400 bg-transparent">{displayChar}</span>;
+              }
             } else {
-              return <span key={i} className="underline decoration-red-400/60 text-red-600 dark:text-red-400 bg-transparent">{displayChar}</span>;
+              return <span key={ci} className="text-neutral-400/60 dark:text-neutral-600/60">{displayChar}</span>;
             }
+          });
+          // Use inline-block for words, normal for spaces
+          if (/^\s+$/.test(word)) {
+            return <span key={wi}>{wordSpans}</span>;
           } else {
-            return <span key={i} className="text-neutral-400/60 dark:text-neutral-600/60">{displayChar}</span>;
+            return <span key={wi} className="inline-block">{wordSpans}</span>;
           }
         })}
       </div>
@@ -62,7 +79,6 @@ export default function ReadPage({ params }: { params: { id: string } }) {
 
   return (
     <Layout>
-      <TopBar />
       <div className="flex flex-col items-center">
         <div className="w-full max-w-2xl">
           {renderSkeleton()}
