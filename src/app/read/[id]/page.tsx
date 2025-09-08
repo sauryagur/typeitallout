@@ -30,26 +30,23 @@ export default function ReadPage({ params }: { params: { id: string } }) {
     return i;
   }
 
-  // Handle key input
+  // Handle key input (overwrite only, no insertion, passage is fixed)
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (!book) return;
-    // Typing
+    // Typing (overwrite only)
     if (e.key.length === 1 && caret < book.passage.length && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      setInput(input.slice(0, caret) + e.key + input.slice(caret));
+      let newInput = input.split("");
+      newInput[caret] = e.key;
+      setInput(newInput.join("").slice(0, book.passage.length));
       setCaret(caret + 1);
       e.preventDefault();
     }
-    // Backspace
+    // Backspace (remove previous char)
     else if (e.key === "Backspace" && caret > 0) {
-      if (e.ctrlKey) {
-        // Ctrl+Backspace: delete previous word
-        const prev = findPrevWordBoundary(input, caret);
-        setInput(input.slice(0, prev) + input.slice(caret));
-        setCaret(prev);
-      } else {
-        setInput(input.slice(0, caret - 1) + input.slice(caret));
-        setCaret(caret - 1);
-      }
+      let newInput = input.split("");
+      newInput.splice(caret - 1, 1);
+      setInput(newInput.join("").slice(0, book.passage.length));
+      setCaret(caret - 1);
       e.preventDefault();
     }
     // Left arrow
@@ -66,7 +63,7 @@ export default function ReadPage({ params }: { params: { id: string } }) {
       if (e.ctrlKey) {
         setCaret(findNextWordBoundary(input, caret));
       } else {
-        setCaret(Math.min(input.length, caret + 1));
+        setCaret(Math.min(book.passage.length, caret + 1));
       }
       e.preventDefault();
     }
@@ -82,65 +79,44 @@ export default function ReadPage({ params }: { params: { id: string } }) {
     setCaret(c => Math.min(c, input.length));
   }, [input]);
 
-  // Render passage as skeleton with user input overlay, with word wrapping and caret
+  // Render passage as a fixed skeleton, with user input overwriting, caret at current position, and natural word wrapping
   function renderSkeleton() {
     if (!book) return null;
-    // Split passage into words and spaces, preserving newlines
-    const words = book.passage.match(/[^\s\n]+|\s+|\n/g) || [];
-    let charIndex = 0;
-    let caretRendered = false;
+    const chars = Array.from(book.passage);
     return (
       <div
         ref={inputRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="mt-8 mb-8 outline-none cursor-text min-h-[200px] font-serif text-lg leading-relaxed whitespace-pre-wrap bg-transparent"
+        className="mt-8 mb-8 outline-none cursor-text min-h-[200px] font-serif text-lg leading-relaxed whitespace-pre-wrap bg-transparent wrap-normal"
         style={{ letterSpacing: "0.01em" }}
         aria-label="Typing area"
       >
-        {words.map((word, wi) => {
-          if (word === "\n") {
-            return <br key={wi} />;
-          }
-          // Render each word or space as a span for wrapping
-          const chars = word.split("");
-          const wordSpans = chars.map((char, ci) => {
-            let displayChar = char === " " ? "\u00A0" : char;
-            const i = charIndex;
-            charIndex++;
-            let caretHere = i === caret && !caretRendered;
-            if (caretHere) caretRendered = true;
-            let content = null;
-            if (i < input.length) {
-              if (input[i] === char) {
-                content = <span className="text-black dark:text-white bg-transparent">{displayChar}</span>;
-              } else {
-                content = <span className="underline decoration-red-400/60 text-red-600 dark:text-red-400 bg-transparent">{displayChar}</span>;
-              }
+        {chars.map((char, i) => {
+          let displayChar = char === " " ? "\u00A0" : char;
+          const caretHere = i === caret;
+          let content = null;
+          if (input[i] !== undefined) {
+            if (input[i] === char) {
+              content = <span className="text-black dark:text-white bg-transparent">{displayChar}</span>;
             } else {
-              content = <span className="text-neutral-400/60 dark:text-neutral-600/60">{displayChar}</span>;
+              content = <span className="underline decoration-red-400/60 text-red-600 dark:text-red-400 bg-transparent">{displayChar}</span>;
             }
-            return (
-              <span key={ci} className="relative">
-                {caretHere && (
-                  <span className="absolute left-0 top-0 h-full w-0.5 bg-blue-500 animate-pulse" style={{marginLeft: -1}}></span>
-                )}
-                {content}
-              </span>
-            );
-          });
-          // Use inline-block for words, normal for spaces
-          if (/^\s+$/.test(word)) {
-            return <span key={wi}>{wordSpans}</span>;
           } else {
-            return <span key={wi} className="inline-block">{wordSpans}</span>;
+            content = <span className="text-neutral-400/60 dark:text-neutral-600/60">{displayChar}</span>;
           }
+          return (
+            <React.Fragment key={i}>
+              {caretHere && (
+                <span className="w-0.5 align-middle bg-blue-500 animate-pulse" style={{height: '1em', verticalAlign: 'middle'}}></span>
+              )}
+              {content}
+            </React.Fragment>
+          );
         })}
         {/* If caret is at end, render it after all */}
         {caret === book.passage.length && (
-          <span className="relative">
-            <span className="absolute left-0 top-0 h-full w-0.5 bg-blue-500 animate-pulse" style={{marginLeft: -1}}></span>
-          </span>
+          <span className="inline-block w-0.5 align-middle bg-blue-500 animate-pulse" style={{height: '1em', verticalAlign: 'middle'}}></span>
         )}
       </div>
     );
