@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardContent, CardFooter } from "./ui/Card";
-import { Button } from "./ui/Button";
+import { Card, CardContent, CardFooter } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 export default function QuizCard({ question, value, onChange, onNext, onSubmit, isLast }: {
   question: string;

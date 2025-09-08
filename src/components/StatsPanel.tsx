@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent, CardHeader } from "./ui/Card";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 
 export default function StatsPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (

@@ -1,10 +1,10 @@
-import Layout from "../../components/Layout";
-import { books } from "../../lib/data";
-import { Card } from "../../components/ui/Card";
+import Layout from "@/components/Layout";
+import { books } from "@/lib/data";
+import { Card } from "@/components/ui/Card";
 
 export default function LibraryPage() {
   return (
-    <Layout>
+    <Layout topBarVariant="default">
       <h2 className="text-2xl font-serif font-semibold mb-8">Library</h2>
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
         {books.map(book => (
